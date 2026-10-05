@@ -61,12 +61,12 @@ footer p,footer li{color:#c4cada;margin-bottom:8px}footer ul{list-style:none;pad
 
 <div class="ov" id="lg"><div class="pn s"><h4>Accesso admin</h4><label>Username<input id="lu" autocomplete="username"></label><label>Password<input id="lp" type="password" autocomplete="current-password"></label><div id="le" style="color:#ff8a8a;min-height:1.4em"></div><button class="bt" id="ly">Entra</button> <button class="bo" id="lx">Annulla</button></div></div>
 <div class="ov" id="bo"><div class="pn"><div style="display:flex;justify-content:space-between;align-items:center"><h4>Backoffice Livykey</h4><button class="bo" id="bx">Chiudi</button></div>
-<div class="tb" id="tb"><button data-t="t0" class="on">Nuova app</button><button data-t="t1">App inserite</button><button data-t="t2">Sito</button><button data-t="t3">Cartella sito</button></div><div id="ms"></div>
+<div class="tb" id="tb"><button data-t="t0" class="on">Nuova app</button><button data-t="t1">App inserite</button><button data-t="t2">Sito</button><button data-t="t3">GitHub</button></div><div id="ms"></div>
 <div id="t0"><div class="g2"><label>Nome app<input id="f_n"></label><label>Categoria<select id="f_c"></select></label></div><label id="f_nl" hidden>Nuova categoria<input id="f_nc"></label>
 <label>Descrizione<textarea id="f_d" rows="4"></textarea></label><div class="g2"><label>Immagini (max 3)<input type="file" id="f_i" accept="image/*" multiple></label><label>Video di sfondo (facoltativo)<input type="file" id="f_v" accept="video/*"></label></div>
 <label>File app (facoltativo)<input type="file" id="f_f"></label><div style="color:var(--mu);font-size:.85rem;margin-bottom:6px">Link download (fino a 5, facoltativi)</div><div id="f_l"></div><button class="bt" id="f_s">Salva app</button></div>
 <div id="t1" hidden></div><div id="t2" hidden></div>
-<div id="t3" hidden><p style="color:var(--mu);margin-bottom:12px">Collega la cartella del sito: ogni nuova app viene salvata in <b>apps/NomeApp</b> con immagini, video, file e <b>app.json</b>; la landing page la legge da lì. Serve Chrome o Edge su desktop.</p><button class="bo" id="d_c">Collega cartella</button> <button class="bo" id="d_s">Scrivi tutto ora</button></div></div></div>
+<div id="t3" hidden><p style="color:var(--mu);margin-bottom:12px">Collega il repository GitHub del sito: ogni app viene caricata direttamente in <b>apps/NomeApp</b> (immagini, video, file e app.json) e compare online dopo circa un minuto. Serve un token fine-grained limitato a questo solo repository, con permesso <b>Contents: Read and write</b>. Il token resta solo in questo browser.</p><div class="g2"><label>Utente o organizzazione GitHub<input id="g_o"></label><label>Repository<input id="g_r"></label><label>Branch<input id="g_b" value="main"></label><label>Token<input id="g_t" type="password" autocomplete="off"></label></div><button class="bt" id="g_s">Salva e verifica</button></div></div></div>
 
 <script>
 const $=(s,e=document)=>e.querySelector(s),$$=(s,e=document)=>[...e.querySelectorAll(s)],esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
@@ -89,7 +89,7 @@ async function load(){let cfg=await idb('get','cfg'),cats=await idb('get','cats'
  S.cfg={...DEF,...rc,...(cfg||{})};S.cats=cats;S.apps=apps}
 const persist=async()=>{await idb('put','cfg',S.cfg);await idb('put','cats',S.cats);await idb('put','apps',S.apps.filter(a=>!a.demo))};
 const card=a=>{const im=(a.imgs||[]).map(x=>`<img src="${esc(U(x))}" alt="${esc(a.name)}" loading="lazy">`).join('')||`<img src="${gr('#1b2540','#b8924f')}" alt="">`;
- const ls=(a.links||[]).map(l=>{const i=IC[l.icon]||IC.other;return`<a class="lk" href="${esc(l.url)}" target="_blank" rel="noopener">${i[0]} ${i[1]}</a>`}).join('')+(a.file?`<a class="lk" download href="${esc(a.file instanceof Blob?U(a.file):a.fileUrl)}">⬇ ${esc(a.file.name||'Scarica')}</a>`:'');
+ const ls=(a.links||[]).map(l=>{const i=IC[l.icon]||IC.other;return`<a class="lk" href="${esc(l.url)}" target="_blank" rel="noopener">${i[0]} ${i[1]}</a>`}).join('')+(a.file?`<a class="lk" download href="${esc(U(a.file))}">⬇ ${esc(a.file.name||'Scarica')}</a>`:'');
  return`<section class="app" id="a-${esc(a.slug)}">${a.video?`<video muted loop playsinline preload="none" data-s="${esc(U(a.video))}"></video>`:''}<div class="in">
  <div class="car rv"><div class="tr">${im}</div>${(a.imgs||[]).length>1?'<button class="nv" data-d="-1" aria-label="Precedente">‹</button><button class="nv" data-d="1" aria-label="Successiva">›</button>':''}</div>
  <div class="rv"><span class="cat">${esc(a.cat)}</span><h3 class="gt">${esc(a.name)}</h3><div class="ds">${esc(a.desc)}</div><time>Inserita il ${new Date(a.date).toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'})}</time><div class="ls">${ls}</div></div></div></section>`};
@@ -110,7 +110,7 @@ $('#bg').onclick=()=>$('#nv').classList.toggle('on');
 $('#adm').onclick=()=>S.adm?openBO():($('#lg').classList.add('on'),$('#lu').focus());$('#lx').onclick=()=>$('#lg').classList.remove('on');
 $('#ly').onclick=()=>{if($('#lu').value===S.cfg.user&&$('#lp').value===S.cfg.pass){S.adm=1;$('#lg').classList.remove('on');$('#lp').value='';$('#adm').textContent='⚙ Backoffice';openBO()}else $('#le').textContent='Credenziali non valide.'};
 $('#bx').onclick=()=>$('#bo').classList.remove('on');
-const tab=t=>{$$('#tb button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));['t0','t1','t2','t3'].forEach(i=>$('#'+i).hidden=i!==t);if(t==='t1')list();if(t==='t2')sett()};
+const tab=t=>{$$('#tb button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));['t0','t1','t2','t3'].forEach(i=>$('#'+i).hidden=i!==t);if(t==='t1')list();if(t==='t2')sett();if(t==='t3')gcfg().then(c=>{if(c){$('#g_o').value=c.o;$('#g_r').value=c.r;$('#g_b').value=c.b;$('#g_t').value=c.t}})};
 $('#tb').onclick=e=>e.target.dataset.t&&tab(e.target.dataset.t);
 const opts=Object.entries(IC).map(([k,v])=>`<option value="${k}">${v[1]}</option>`).join('');
 $('#f_l').innerHTML=Array(5).fill(`<div class="lr"><select>${opts}</select><input placeholder="https://… link download"></div>`).join('');
@@ -123,25 +123,30 @@ $('#f_s').onclick=async()=>{const g=i=>$('#'+i).value.trim(),name=g('f_n');if(!n
  const o=S.apps.find(a=>a.id===editId)||{},im=[...$('#f_i').files].slice(0,3),
  a={id:o.id||Date.now(),name,slug:slug(name),cat,desc:g('f_d'),date:o.date||new Date().toISOString(),imgs:im.length?im:o.imgs||[],video:$('#f_v').files[0]||o.video||null,file:$('#f_f').files[0]||o.file||null,
  links:$$('.lr').map(r=>({icon:$('select',r).value,url:$('input',r).value.trim()})).filter(l=>l.url)};
- S.apps=S.apps.filter(x=>x.id!==a.id);S.apps.push(a);if(!S.cats.includes(cat))S.cats.push(cat);await persist();render();
- msg(await toFolder(a)?`“${name}” salvata in apps/${a.slug}.`:`“${name}” salvata nel browser. Collega la cartella del sito per creare apps/${a.slug}.`);reset()};
+ S.apps=S.apps.filter(x=>x.id!==a.id);S.apps.push(a);if(!S.cats.includes(cat))S.cats.push(cat);await persist();render();msg('Caricamento su GitHub…');
+ const r=await toGH(a);if(r){Object.assign(a,r);await persist();render()}
+ msg(r?`“${name}” caricata in apps/${a.slug}. Sarà online tra circa un minuto.`:`“${name}” salvata solo nel browser. ${S.err||'Collega GitHub nella tab GitHub per pubblicarla.'}`);reset()};
 function list(){$('#t1').innerHTML=S.apps.map(a=>`<div class="it"><span><b>${esc(a.name)}</b> <small style="color:var(--mu)">${esc(a.cat)}</small></span><span><button class="bo" data-e="${a.id}">Modifica</button><button class="bo" data-x="${a.id}">Elimina</button></span></div>`).join('')||'<p style="color:var(--mu)">Nessuna app inserita: usa “Nuova app”.</p>'}
 $('#t1').onclick=async e=>{const id=+(e.target.dataset.e||e.target.dataset.x),a=S.apps.find(x=>x.id===id);if(!a)return;
- if(e.target.dataset.x){if(!confirm('Eliminare “'+a.name+'”?'))return;S.apps=S.apps.filter(x=>x.id!==id);await persist();try{const h=await getDir();await(await h.getDirectoryHandle('apps')).removeEntry(a.slug,{recursive:true});await idx()}catch(x){}render();list()}
+ if(e.target.dataset.x){if(!confirm('Eliminare “'+a.name+'”?'))return;S.apps=S.apps.filter(x=>x.id!==id);await persist();msg('Eliminazione…');try{await ghDel(a.slug);await idx()}catch(x){msg(x.message)}render();list()}
  else{tab('t0');editId=id;$('#f_n').value=a.name;$('#f_c').value=a.cat;$('#f_d').value=a.desc;$$('.lr').forEach((r,i)=>{const l=(a.links||[])[i];$('input',r).value=l?l.url:'';$('select',r).value=l?l.icon:'android'});$('#f_s').textContent='Aggiorna app';msg('Modifica: i media restano invariati se non ne scegli di nuovi.')}};
 const F=[['heroTitle','Titolo di benvenuto'],['heroSub','Motto'],['catTitle','Titolo categorie'],['appsTitle','Titolo prodotti'],['aboutTitle','Titolo brand'],['about','Descrizione del brand','t'],['email','Email'],['phone','Telefono'],['address','Indirizzo'],['links','Link (uno per riga: Etichetta|URL)','t'],['g1','Colore oro chiaro','c'],['g2','Colore oro scuro','c'],['bg','Colore sfondo','c'],['user','Username admin'],['pass','Password admin']];
 function sett(){$('#t2').innerHTML='<div class="g2">'+F.map(([k,l,t])=>`<label>${l}${t==='t'?`<textarea data-k="${k}" rows="4"></textarea>`:`<input data-k="${k}" type="${t==='c'?'color':'text'}">`}</label>`).join('')+`</div><label>Categorie (una per riga: rinomina o aggiungi)<textarea id="s_c" rows="4"></textarea></label><button class="bt" id="s_s">Salva impostazioni</button>`;
  $$('[data-k]').forEach(i=>i.value=S.cfg[i.dataset.k]);$('#s_c').value=S.cats.join('\n');
- $('#s_s').onclick=async()=>{$$('[data-k]').forEach(i=>S.cfg[i.dataset.k]=i.value);S.cats=$('#s_c').value.split('\n').map(x=>x.trim()).filter(Boolean);await persist();render();try{await getDir();await idx()}catch(e){}msg('Impostazioni salvate.')}}
-/* ---- Cartella sito (File System Access API) ---- */
-async function getDir(){const h=await idb('get','dir');if(!h)throw 0;if(await h.queryPermission({mode:'readwrite'})!=='granted'&&await h.requestPermission({mode:'readwrite'})!=='granted')throw 0;return h}
-async function wf(p,d){let h=await getDir();for(const n of p.slice(0,-1))h=await h.getDirectoryHandle(n,{create:true});const w=await(await h.getFileHandle(p.at(-1),{create:true})).createWritable();await w.write(d);await w.close()}
+ $('#s_s').onclick=async()=>{$$('[data-k]').forEach(i=>S.cfg[i.dataset.k]=i.value);S.cats=$('#s_c').value.split('\n').map(x=>x.trim()).filter(Boolean);await persist();render();try{await idx()}catch(e){}msg('Impostazioni salvate.')}}
+/* ---- GitHub (Contents API) ---- */
+const gcfg=()=>idb('get','gh');
+const req=(c,p,m,b)=>fetch(`https://api.github.com/repos/${c.o}/${c.r}/contents/${p.split('/').map(encodeURIComponent).join('/')}${m==='GET'?'?ref='+encodeURIComponent(c.b):''}`,{method:m,headers:{Authorization:'Bearer '+c.t,Accept:'application/vnd.github+json'},body:b&&JSON.stringify(b)});
+const b64=async d=>{const u=new Uint8Array(await(d instanceof Blob?d:new Blob([d])).arrayBuffer());let s='';for(let i=0;i<u.length;i+=32768)s+=String.fromCharCode(...u.subarray(i,i+32768));return btoa(s)};
+async function wf(p,d){const c=await gcfg();if(!c)throw new Error('');if(d.size>50e6)throw new Error('File troppo grande (max 50 MB): caricalo in GitHub Releases e inserisci il link di download.');
+ const path=p.join('/'),g=await req(c,path,'GET'),sha=g.ok?(await g.json()).sha:undefined,r=await req(c,path,'PUT',{message:'Livykey: '+path,content:await b64(d),branch:c.b,sha});if(!r.ok)throw new Error('GitHub: '+(await r.json()).message)}
+async function ghDel(slug){const c=await gcfg();if(!c)return;const g=await req(c,'apps/'+slug,'GET');if(!g.ok)return;for(const f of await g.json())await req(c,f.path,'DELETE',{message:'Livykey: elimina '+f.path,sha:f.sha,branch:c.b})}
 const idx=()=>{const{user,pass,...pub}=S.cfg;return wf(['apps','index.json'],JSON.stringify({cfg:pub,cats:S.cats,apps:S.apps.filter(a=>!a.demo).map(a=>a.slug)}))};
-async function toFolder(a){try{await getDir()}catch(e){return false}const p=['apps',a.slug],b=p.join('/'),s={...a,imgs:[],video:null,file:null};
+async function toGH(a){const c=await gcfg();if(!c){S.err='';return null}const p=['apps',a.slug],b=p.join('/'),s={...a,imgs:[],video:null,file:null};
  try{for(const[i,x]of(a.imgs||[]).entries()){if(x instanceof Blob){const n=`img${i+1}.${ext(x)}`;await wf([...p,n],x);s.imgs.push(`${b}/${n}`)}else s.imgs.push(x)}
- for(const k of['video','file']){const x=a[k];if(x instanceof Blob){const n=k==='video'?'video.'+ext(x):x.name;await wf([...p,n],x);s[k]=k==='file'?{name:x.name}:`${b}/${n}`;if(k==='file')s.fileUrl=`${b}/${n}`}else s[k]=x}
- await wf([...p,'app.json'],JSON.stringify(s));await idx();return true}catch(e){return false}}
-$('#d_c').onclick=async()=>{if(!window.showDirectoryPicker)return msg('Browser non supportato: usa Chrome o Edge su desktop.');try{await idb('put','dir',await showDirectoryPicker({mode:'readwrite'}));msg('Cartella collegata.')}catch(e){}};
-$('#d_s').onclick=async()=>{let ok=0;for(const a of S.apps)if(await toFolder(a))ok++;msg(ok?`Scritte ${ok} app in apps/.`:'Collega prima la cartella del sito.')};
+ for(const k of['video','file']){const x=a[k];if(x instanceof Blob){const n=k==='video'?'video.'+ext(x):x.name.replace(/[^\w.\-]/g,'_');await wf([...p,n],x);if(k==='file'){s.file={name:x.name};s.fileUrl=`${b}/${n}`}else s.video=`${b}/${n}`}else s[k]=x}
+ await wf([...p,'app.json'],JSON.stringify(s));await idx();S.err='';return s}catch(e){S.err=e.message;return null}}
+$('#g_s').onclick=async()=>{const c={o:$('#g_o').value.trim(),r:$('#g_r').value.trim(),b:$('#g_b').value.trim()||'main',t:$('#g_t').value.trim()};if(!c.o||!c.r||!c.t)return msg('Compila utente, repository e token.');
+ try{const r=await fetch(`https://api.github.com/repos/${c.o}/${c.r}`,{headers:{Authorization:'Bearer '+c.t}}),j=await r.json();if(!r.ok)throw new Error(j.message);if(j.permissions&&!j.permissions.push)throw new Error('il token non ha il permesso di scrittura (Contents: Read and write).');await idb('put','gh',c);msg(`Collegato a ${c.o}/${c.r}.`)}catch(e){msg('Errore: '+e.message)}};
 (async()=>{await load();render()})();
 </script></body></html>
